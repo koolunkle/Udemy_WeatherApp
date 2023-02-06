@@ -9,6 +9,7 @@ import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
@@ -96,6 +97,7 @@ class MainActivity : AppCompatActivity() {
                         hideProgressDialog()
 
                         val weatherList: WeatherResponse = response.body()
+                        setupUI(weatherList)
                         Log.i("Response Result", "$weatherList")
                     } else {
                         when (response.code()) {
@@ -175,6 +177,27 @@ class MainActivity : AppCompatActivity() {
 
     private fun hideProgressDialog() {
         if (mProgressDialog != null) mProgressDialog!!.dismiss()
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setupUI(weatherList: WeatherResponse) {
+        for (i in weatherList.weather.indices) {
+            Log.i("Weather Name", weatherList.weather.toString())
+
+            binding.tvMain.text = weatherList.weather[i].main
+            binding.tvMainDescription.text = weatherList.weather[i].description
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                binding.tvTemp.text =
+                    weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+            }
+        }
+    }
+
+    private fun getUnit(unit: String): String {
+        var value = "°C"
+        if (unit == "US" || unit == "LR" || unit == "MM") value = "°F"
+        return value
     }
 
     override fun onDestroy() {
