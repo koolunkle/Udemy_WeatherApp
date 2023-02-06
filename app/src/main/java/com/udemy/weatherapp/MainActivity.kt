@@ -2,6 +2,7 @@ package com.udemy.weatherapp
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -33,6 +34,8 @@ class MainActivity : AppCompatActivity() {
     private val binding get() = _binding!!
 
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
+
+    private var mProgressDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,9 +87,14 @@ class MainActivity : AppCompatActivity() {
             val listCall: Call<WeatherResponse> = service.getWeather(
                 latitude, longitude, Constants.METRIC_UNIT, Constants.APP_ID
             )
+
+            showCustomProgressDialog()
+
             listCall.enqueue(object : Callback<WeatherResponse> {
                 override fun onResponse(response: Response<WeatherResponse>?, retrofit: Retrofit?) {
                     if (response?.isSuccess!!) {
+                        hideProgressDialog()
+
                         val weatherList: WeatherResponse = response.body()
                         Log.i("Response Result", "$weatherList")
                     } else {
@@ -100,6 +108,7 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onFailure(t: Throwable?) {
                     Log.e("Error", t?.message.toString())
+                    hideProgressDialog()
                 }
             })
         } else {
@@ -156,6 +165,16 @@ class MainActivity : AppCompatActivity() {
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
             LocationManager.NETWORK_PROVIDER
         )
+    }
+
+    private fun showCustomProgressDialog() {
+        mProgressDialog = Dialog(this)
+        mProgressDialog!!.setContentView(R.layout.dialog_custom_progress)
+        mProgressDialog!!.show()
+    }
+
+    private fun hideProgressDialog() {
+        if (mProgressDialog != null) mProgressDialog!!.dismiss()
     }
 
     override fun onDestroy() {
