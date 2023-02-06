@@ -14,6 +14,8 @@ import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -39,6 +41,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
 
     private var mProgressDialog: Dialog? = null
+
+    private var mLatitude: Double = 0.0
+
+    private var mLongitude: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,7 +86,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getLocationWeatherDetails(latitude: Double, longitude: Double) {
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_refresh -> {
+                getLocationWeatherDetails()
+                true
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun getLocationWeatherDetails() {
         if (Constants.isNetworkAvailable(this)) {
             val retrofit: Retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create()).build()
@@ -88,7 +109,7 @@ class MainActivity : AppCompatActivity() {
             val service: WeatherService = retrofit.create(WeatherService::class.java)
 
             val listCall: Call<WeatherResponse> = service.getWeather(
-                latitude, longitude, Constants.METRIC_UNIT, Constants.APP_ID
+                mLatitude, mLongitude, Constants.METRIC_UNIT, Constants.APP_ID
             )
 
             showCustomProgressDialog()
@@ -153,13 +174,13 @@ class MainActivity : AppCompatActivity() {
     private val mLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val mLastLocation: Location = locationResult.lastLocation!!
-            val latitude = mLastLocation.latitude
-            Log.i("Current Latitude", "$latitude")
+            mLatitude = mLastLocation.latitude
+            Log.i("Current Latitude", "$mLatitude")
 
-            val longitude = mLastLocation.longitude
-            Log.i("Current Longitude", "$longitude")
+            mLongitude = mLastLocation.longitude
+            Log.i("Current Longitude", "$mLongitude")
 
-            getLocationWeatherDetails(latitude, longitude)
+            getLocationWeatherDetails()
         }
     }
 
