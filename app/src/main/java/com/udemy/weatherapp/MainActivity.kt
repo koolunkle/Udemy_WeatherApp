@@ -22,6 +22,9 @@ import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.udemy.weatherapp.databinding.ActivityMainBinding
+import com.udemy.weatherapp.model.WeatherResponse
+import com.udemy.weatherapp.network.WeatherService
+import retrofit.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -71,13 +74,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getLocationWeatherDetails() {
+    private fun getLocationWeatherDetails(latitude: Double, longitude: Double) {
         if (Constants.isNetworkAvailable(this)) {
-            Toast.makeText(
-                this@MainActivity,
-                "You have connected to the internet. Now you can make an api call.",
-                Toast.LENGTH_SHORT
-            ).show()
+            val retrofit: Retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create()).build()
+
+            val service: WeatherService = retrofit.create(WeatherService::class.java)
+
+            val listCall: Call<WeatherResponse> = service.getWeather(
+                latitude, longitude, Constants.METRIC_UNIT, Constants.APP_ID
+            )
+            listCall.enqueue(object : Callback<WeatherResponse> {
+                override fun onResponse(response: Response<WeatherResponse>?, retrofit: Retrofit?) {
+                    if (response?.isSuccess!!) {
+                        val weatherList: WeatherResponse = response.body()
+                        Log.i("Response Result", "$weatherList")
+                    } else {
+                        when (response.code()) {
+                            400 -> Log.e("Error 400", "Bad Connection")
+                            404 -> Log.e("Error 404", "Not Found")
+                            else -> Log.e("Error", "Generic Error")
+                        }
+                    }
+                }
+
+                override fun onFailure(t: Throwable?) {
+                    Log.e("Error", t?.message.toString())
+                }
+            })
         } else {
             Toast.makeText(
                 this@MainActivity, "No internet connection available.", Toast.LENGTH_SHORT
@@ -122,7 +146,7 @@ class MainActivity : AppCompatActivity() {
             val longitude = mLastLocation.longitude
             Log.i("Current Longitude", "$longitude")
 
-            getLocationWeatherDetails()
+            getLocationWeatherDetails(latitude, longitude)
         }
     }
 
